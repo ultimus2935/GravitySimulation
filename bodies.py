@@ -13,9 +13,7 @@ from util.properties import *
 kineticBodies = graphics.Batch()
 kineticBodies.list = []
 
-def state1(): 
-    n = 2
-    
+def createBodies(n: int, radius: float = 10, position: tuple[float, float] = None, velocity: tuple[float, float] = None, massDensity: float = 1e+3, chargeDensity: float = 0):    
     for i in range(n):
         body = shapes.Circle(
             x = 0, y = 0, radius = 20, 
@@ -23,54 +21,29 @@ def state1():
             batch = kineticBodies
         )
         
-        body.mass_density = 7.85e+3
-        body.mass = body.mass_density * (4/3) * math.pi * body.radius**2
-        
-        body.charge_density = 0
-        body.charge = body.charge_density * (4/3) * math.pi * body.radius**2
+        body.mass = massDensity * (4/3) * math.pi * body.radius**2
+        body.charge = chargeDensity * (4/3) * math.pi * body.radius**2
         
         body.acceleration = (0, 0)
         
-        body.velocity = (
-            randint(-body.radius, body.radius),
-            randint(-body.radius, body.radius)
-        )
+        if velocity is None:
+            body.velocity = (
+                randint(-body.radius, body.radius),
+                randint(-body.radius, body.radius)
+            )
+        else: body.velocity = velocity
         
-        body.position = (
-            randint(body.radius, SCREEN_WIDTH - body.radius), 
-            randint(body.radius, SCREEN_HEIGHT - body.radius)
-        )
-        
-        kineticBodies.list.append(body)
-
-def state2():
-    n = 2
-    
-    state_variables = [
-        [[0, 20], [CENTER_X - 150, CENTER_Y]],
-        [[0, -20], [CENTER_X + 150, CENTER_Y]]
-    ]
-    
-    for i in range(n):
-        body = shapes.Circle(
-            x = 0, y = 0, radius = 20, 
-            color = (255, 255, 255),
-            batch = kineticBodies
-        )
-        
-        body.density = 7.85e+3
-        body.mass = body.density * (4/3) * math.pi * body.radius**2
-        
-        body.acceleration = (0, 0)
-        
-        body.velocity = state_variables[i][0]
-        body.position = state_variables[i][1]
+        if position is None:
+            body.position = (
+                randint(body.radius, SCREEN_WIDTH - body.radius), 
+                randint(body.radius, SCREEN_HEIGHT - body.radius)
+            )
+        else: body.position = position
         
         kineticBodies.list.append(body)
 
 def init():
-    # state1()
-    state2()
+    createBodies(2, massDensity = 7.85e+3)
 
 def draw():
     kineticBodies.draw()

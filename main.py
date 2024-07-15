@@ -10,27 +10,25 @@ from util.properties import *
 import bodies
 import physics
 
-DEBUG = False;
-
-window = window.Window(
-    width = SCREEN_WIDTH,
-    height = SCREEN_HEIGHT,
-    caption='Pyglet Test'
+win = window.Window(
+    width = SCREEN_WIDTH, height = SCREEN_HEIGHT,
+    caption = 'Pyglet Test',
+    vsync = False
 )
 
-if DEBUG: fps = window.FPSDisplay(window)
+if DEBUG: fps = window.FPSDisplay(win)
 
 bodies.init()
 
-@window.event
+@win.event
 def on_draw():
-    window.clear()
+    win.clear()
     
     if DEBUG: fps.draw()
     bodies.draw()
 
 def update(dt):
-    physics.update(dt)
+    physics.update(SPEED * dt)
 
 if __name__ == '__main__':
     pyglet.clock.schedule_interval(update, 1/60)
