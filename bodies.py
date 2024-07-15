@@ -23,8 +23,11 @@ def state1():
             batch = kineticBodies
         )
         
-        body.density = 7.85e+3
-        body.mass = body.density * (4/3) * math.pi * body.radius**2
+        body.mass_density = 7.85e+3
+        body.mass = body.mass_density * (4/3) * math.pi * body.radius**2
+        
+        body.charge_density = 0
+        body.charge = body.charge_density * (4/3) * math.pi * body.radius**2
         
         body.acceleration = (0, 0)
         

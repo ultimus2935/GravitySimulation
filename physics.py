@@ -9,6 +9,8 @@ import bodies
 from bodies import kineticBodies
 
 def gravity(body, bodies):
+    if body.mass == 0: return (0, 0)
+    
     acceleration = (0, 0)
     
     for other in bodies.list:
@@ -23,9 +25,28 @@ def gravity(body, bodies):
     
     return acceleration
 
+def electrostatic(body, bodies):
+    if body.charge == 0: return (0, 0)
+    
+    acceleration = (0, 0)
+    
+    for other in bodies.list:
+        if body != other:
+            distance = math.sqrt((body.position[0] - other.position[0])**2 + (body.position[1] - other.position[1])**2)
+            magnitude = (k * other.charge * body.charge) / (body.mass * distance**2)
+            
+            acceleration = (
+                acceleration[0] + magnitude * (other.position[0] - body.position[0]) / distance,
+                acceleration[1] + magnitude * (other.position[1] - body.position[1]) / distance
+            )
+    
+    return acceleration
+
 def update(dt):
     for body in kineticBodies.list:
-        body.acceleration = gravity(body, kineticBodies)
+        body.acceleration = (0, 0)
+        body.acceleration += gravity(body, kineticBodies)
+        body.acceleration += electrostatic(body, kineticBodies)
         
         body.velocity = (
             body.velocity[0] + body.acceleration[0] * dt,
