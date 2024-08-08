@@ -9,7 +9,7 @@ from pyglet import shapes, graphics
 
 sys.path.append(os.path.dirname(os.path.dirname(__file__) + '/../util'))
 from util.properties import *
-    
+
 kineticBodies = graphics.Batch()
 kineticBodies.list = []
 
