@@ -1,11 +1,14 @@
 import sys
 import os
 import math
+import csv
 
-from random import randint
+import numpy as np
+from numpy import *
+from numpy.linalg import norm
 
 import pyglet
-from pyglet import app, window, shapes, graphics
+from pyglet import *
 
 sys.path.append(os.path.dirname(os.path.dirname(__file__) + '/../util'))
 from util.properties import *
@@ -22,68 +25,75 @@ if DEBUG: fps = window.FPSDisplay(win)
 kineticBodies = graphics.Batch()
 kineticBodies.list = []
 
-def createBodies(n: int, radius: float = 10, position: tuple[float, float] = None, velocity: tuple[float, float] = None, massDensity: float = 1e+3, chargeDensity: float = 0):    
-    for i in range(n):
-        body = shapes.Circle(
-            x = 0, y = 0, radius = 20, 
-            color = (255, 255, 255),
-            batch = kineticBodies
+class Body():
+    def __init__(self, name = '',
+                mass_density = 0, charge_density = 0, radius = 0, 
+                position = np.zeros(2), velocity = np.zeros(2),
+                batch = None
+                ):
+        self.name = name
+        
+        self.pos = position
+        self.vel = velocity
+        self.acc = zeros(2)
+        
+        self.mass = mass_density * pi * radius**2
+        self.charge = charge_density * pi * radius**2
+        
+        self.sprite = shapes.Circle(
+            *(ORIGIN + position), radius = radius,
+            batch = batch
         )
         
-        body.mass = massDensity * (4/3) * math.pi * body.radius**2
-        body.charge = chargeDensity * (4/3) * math.pi * body.radius**2
+    def gravity(self, bodies):
+        acc = np.zeros(2)
+        if self.mass == 0: return acc
         
-        body.acceleration = (0, 0)
-        
-        if velocity is None:
-            body.velocity = (
-                randint(-body.radius, body.radius),
-                randint(-body.radius, body.radius)
-            )
-        else: body.velocity = velocity
-        
-        if position is None:
-            body.position = (
-                randint(body.radius, SCREEN_WIDTH - body.radius), 
-                randint(body.radius, SCREEN_HEIGHT - body.radius)
-            )
-        else: body.position = position
-        
-        kineticBodies.list.append(body)
-
-def gravity(body, bodies):
-    if body.mass == 0: return (0, 0)
-    
-    acceleration = (0, 0)
-    
-    for other in bodies.list:
-        if body != other:
-            distance = math.sqrt((body.position[0] - other.position[0])**2 + (body.position[1] - other.position[1])**2)
-            magnitude = G * other.mass / (distance**2)
+        for body in bodies:
+            if body == self or body.mass == 0: continue
             
-            acceleration = (
-                acceleration[0] + magnitude * (other.position[0] - body.position[0]) / distance,
-                acceleration[1] + magnitude * (other.position[1] - body.position[1]) / distance
-            )
-    
-    return acceleration
+            r = body.pos - self.pos
+            acc += G * body.mass * (r / np.linalg.norm(r)**3)
+        
+        return acc
 
-def electrostatic(body, bodies):
-    if body.charge == 0: return (0, 0)
-    
-    acceleration = (0, 0)
-    
-    for other in bodies.list:
-        if body != other:
-            distance = math.sqrt((body.position[0] - other.position[0])**2 + (body.position[1] - other.position[1])**2)
-            magnitude = (k * other.charge * body.charge) / (body.mass * distance**2)
+    def electrostatic(self, bodies):
+        acc = np.zeros(2)
+        if self.mass == 0: return acc
+        
+        for body in bodies:
+            if body == self or body.charge == 0: continue
             
-            acceleration = (
-                acceleration[0] + magnitude * (other.position[0] - body.position[0]) / distance,
-                acceleration[1] + magnitude * (other.position[1] - body.position[1]) / distance
-            )
+            r = body.pos - self.pos
+            acc += (k * body.charge * self.charge / self.mass) * (r / np.linalg.norm(r)**3)
+                
+        return acc
+            
+    def update(self, bodies, dt):
+        self.acc = self.gravity(bodies)
+        self.acc += self.electrostatic(bodies)
+        
+        self.vel += self.acc * dt
+        self.pos += self.vel * dt
+        
+        self.sprite.position = ORIGIN + self.pos
+
+def loadBodies(path):
+    fp = open(SYSTEM_FILE_PATH, 'r')
     
-    return acceleration
+    reader = csv.DictReader(fp, delimiter = ',')
+    for row in reader:
+        kineticBodies.list.append(
+            Body(
+                name = row['name'],
+                mass_density = float(row['mass_density']),
+                charge_density = float(row['charge_density']),
+                radius = float(row['radius']),
+                position = array([float(row['x']), float(row['y'])]),
+                velocity = array([float(row['vx']), float(row['vy'])]),
+                batch = kineticBodies
+            )
+        )
 
 @win.event
 def on_draw():
@@ -93,20 +103,10 @@ def on_draw():
     kineticBodies.draw()
 
 def update(dt):
-    for body in kineticBodies.list:
-        body.acceleration = (0, 0)
-        body.acceleration += gravity(body, kineticBodies)
-        body.acceleration += electrostatic(body, kineticBodies)
-        
-        body.velocity = (
-            body.velocity[0] + body.acceleration[0] * dt,
-            body.velocity[1] + body.acceleration[1] * dt)
-        
-        body.position = (
-            body.position[0] + body.velocity[0] * dt,
-            body.position[1] + body.velocity[1] * dt)
+    for body in kineticBodies.list: 
+        body.update(kineticBodies.list, dt)
 
 if __name__ == '__main__':
-    createBodies(2, massDensity = 7.85e+3)
-    pyglet.clock.schedule_interval(update, SPEED/60)
+    loadBodies('systems/two_body.csv')
+    pyglet.clock.schedule_interval(update, dt)
     app.run()
