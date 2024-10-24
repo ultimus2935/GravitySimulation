@@ -1,5 +1,7 @@
 # test files
 test/
+systems/
+util/properties.py
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
