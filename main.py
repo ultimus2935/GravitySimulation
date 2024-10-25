@@ -14,11 +14,7 @@ sys.path.append(os.path.dirname(os.path.dirname(__file__) + '/../util'))
 from util.properties import *
 from util.constants import *
 
-win = window.Window(
-    width = SCREEN_WIDTH, height = SCREEN_HEIGHT,
-    caption = 'Pyglet Test',
-    vsync = False
-)
+win = window.Window(*ORIGIN, caption = 'Gravity Simulator', vsync = False)
 
 if DEBUG: fps = window.FPSDisplay(win)
 
@@ -35,7 +31,6 @@ class Body():
         
         self.pos = position
         self.vel = velocity
-        self.acc = zeros(2)
         
         self.mass = mass_density * pi * radius**2
         self.charge = charge_density * pi * radius**2
@@ -70,10 +65,10 @@ class Body():
         return acc
             
     def update(self, bodies, dt):
-        self.acc = self.gravity(bodies)
-        self.acc += self.electrostatic(bodies)
+        acc = self.gravity(bodies)
+        acc += self.electrostatic(bodies)
         
-        self.vel += self.acc * dt
+        self.vel += acc * dt
         self.pos += self.vel * dt
         
         self.sprite.position = ORIGIN + self.pos
